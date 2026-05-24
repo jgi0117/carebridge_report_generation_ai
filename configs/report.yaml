@@ -1,0 +1,4 @@
+report:
+  default_period_days: 7
+  language: ko
+  output_format: markdown

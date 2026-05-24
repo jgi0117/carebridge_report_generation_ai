@@ -1,0 +1,4 @@
+llm:
+  provider: openai
+  model: ""
+  temperature: 0.2

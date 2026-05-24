@@ -1,0 +1,7 @@
+project:
+  name: report_generation
+
+paths:
+  data_root: data
+  output_root: output
+  report_output: output/reports
