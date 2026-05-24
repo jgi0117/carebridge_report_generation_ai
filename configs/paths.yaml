@@ -3,5 +3,6 @@ project:
 
 paths:
   data_root: data
+  sample_emotion_csv: data/sample_emotion_probabilities_6months.csv
   output_root: output
   report_output: output/reports

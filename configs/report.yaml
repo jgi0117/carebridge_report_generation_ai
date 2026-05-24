@@ -1,4 +1,10 @@
 report:
-  default_period_days: 7
+  default_period: monthly
   language: ko
   output_format: markdown
+  emotion_columns:
+    - 기쁨
+    - 당황
+    - 분노
+    - 슬픔
+    - 중립

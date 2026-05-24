@@ -5,7 +5,7 @@ llm:
   hf_token_env: HF_TOKEN
   temperature: 0.2
   max_new_tokens: 220
-  torch_dtype: auto
+  torch_dtype: float16
   device_map: auto
   trust_remote_code: false
-  local_files_only: true
+  local_files_only: false
