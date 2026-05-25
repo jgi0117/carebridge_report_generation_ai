@@ -1,7 +1,7 @@
 llm:
   provider: huggingface
   backend: transformers
-  model_id: Qwen/Qwen2.5-32B-Instruct
+  model_id: mistralai/Mistral-Small-3.2-24B-Instruct-2506
   hf_token_env: HF_TOKEN
   temperature: 0.2
   max_new_tokens: 512
