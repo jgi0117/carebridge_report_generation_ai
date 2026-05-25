@@ -6,7 +6,7 @@ from typing import Any
 
 import torch
 from huggingface_hub.errors import HfHubHTTPError, LocalEntryNotFoundError
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from src.prompts.monthly_report import SYSTEM_PROMPT
 
@@ -23,6 +23,7 @@ class LlamaReportGenerator:
         self.low_cpu_mem_usage = bool(llm_config.get("low_cpu_mem_usage", True))
         self.trust_remote_code = bool(llm_config.get("trust_remote_code", False))
         self.local_files_only = bool(llm_config.get("local_files_only", True))
+        self.quantization_config = llm_config.get("quantization", {})
         self.hf_token_env = llm_config.get("hf_token_env", "HF_TOKEN")
         self.hf_token = os.getenv(self.hf_token_env) or None
         self._tokenizer = None
@@ -40,6 +41,33 @@ class LlamaReportGenerator:
             return self._resolve_dtype(llm_config.get("torch_dtype", "auto"))
         return self._resolve_dtype(llm_config.get("cpu_torch_dtype", llm_config.get("torch_dtype", "auto")))
 
+    def _build_quantization_config(self) -> BitsAndBytesConfig | None:
+        if not self.quantization_config or not self.quantization_config.get("enabled", False):
+            return None
+
+        load_in_4bit = bool(self.quantization_config.get("load_in_4bit", False))
+        load_in_8bit = bool(self.quantization_config.get("load_in_8bit", False))
+        if load_in_4bit and load_in_8bit:
+            raise ValueError("quantization.load_in_4bit and quantization.load_in_8bit cannot both be true.")
+
+        kwargs: dict[str, Any] = {
+            "load_in_4bit": load_in_4bit,
+            "load_in_8bit": load_in_8bit,
+        }
+        if load_in_4bit:
+            kwargs.update(
+                {
+                    "bnb_4bit_quant_type": self.quantization_config.get("bnb_4bit_quant_type", "nf4"),
+                    "bnb_4bit_compute_dtype": self._resolve_dtype(
+                        self.quantization_config.get("bnb_4bit_compute_dtype", "float16")
+                    ),
+                    "bnb_4bit_use_double_quant": bool(
+                        self.quantization_config.get("bnb_4bit_use_double_quant", True)
+                    ),
+                }
+            )
+        return BitsAndBytesConfig(**kwargs)
+
     def _build_model_load_kwargs(self) -> dict[str, Any]:
         """CPU 환경에서 accelerate disk offload가 걸리지 않도록 로딩 옵션을 구성합니다."""
         kwargs = {
@@ -49,6 +77,9 @@ class LlamaReportGenerator:
             "low_cpu_mem_usage": self.low_cpu_mem_usage,
             "trust_remote_code": self.trust_remote_code,
         }
+        quantization_config = self._build_quantization_config()
+        if quantization_config is not None:
+            kwargs["quantization_config"] = quantization_config
         if torch.cuda.is_available() and self.device_map:
             kwargs["device_map"] = self.device_map
         return kwargs
@@ -108,6 +139,7 @@ class LlamaReportGenerator:
             "loaded": self._model is not None,
             "max_new_tokens": self.max_new_tokens,
             "torch_dtype": str(self.torch_dtype),
+            "quantization": self.quantization_config,
             "low_cpu_mem_usage": self.low_cpu_mem_usage,
             "device_map": getattr(self._model, "hf_device_map", None) if self._model is not None else None,
         }
