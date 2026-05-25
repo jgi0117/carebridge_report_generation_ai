@@ -11,7 +11,7 @@ src/
   ingestion/       CSV/DB 등 입력 데이터 로딩
   aggregation/     일별 데이터를 월별 리포트 지표로 집계
   prompts/         LLM 프롬프트 템플릿
-  generation/      Llama 기반 리포트 생성 로직
+  generation/      Llama 기반 리포트 생성 로직과 CLI 실행 파일
   api/             FastAPI, Gradio 실행 코드
   utils/           설정 파일 로딩 등 공통 유틸리티
 
@@ -70,6 +70,32 @@ python -m src.generation.download_model --local-files-only
 ```
 
 정상이라면 `is_complete=True`가 출력됩니다.
+
+## CLI 리포트 생성
+
+Gradio나 FastAPI를 실행하지 않고 터미널에서 바로 월간 리포트를 생성할 수 있습니다.
+
+```powershell
+python -m src.generation.generate_monthly_report --month 2026-05
+```
+
+월을 생략하면 CSV에 포함된 마지막 월을 사용합니다.
+
+```powershell
+python -m src.generation.generate_monthly_report
+```
+
+출력 경로를 직접 지정할 수도 있습니다.
+
+```powershell
+python -m src.generation.generate_monthly_report --month 2026-05 --output output/reports/may_report.md
+```
+
+파일 저장 없이 콘솔 출력만 확인하려면 `--no-save`를 사용합니다.
+
+```powershell
+python -m src.generation.generate_monthly_report --month 2026-05 --no-save
+```
 
 ## Colab GPU 실행
 

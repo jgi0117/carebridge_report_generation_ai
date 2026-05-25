@@ -12,6 +12,7 @@ from src.ingestion.emotion_loader import load_emotion_probabilities
 
 csv_path, emotion_columns, configs = load_default_context()
 llm_config = configs["llm"]["llm"]
+model_id = llm_config["model_id"]
 generator = LlamaReportGenerator(llm_config)
 
 
@@ -42,7 +43,7 @@ def generate_monthly_report(month: str):
 
 with gr.Blocks(title="CareBridge 월간 감정 리포트") as demo:
     gr.Markdown("# CareBridge 월간 감정 리포트")
-    gr.Markdown("샘플 감정 확률 CSV를 월별로 집계하고 Llama 3.1 8B로 간단한 케어 리포트를 생성합니다.")
+    gr.Markdown(f"샘플 감정 확률 CSV를 월별로 집계하고 `{model_id}`로 간단한 케어 리포트를 생성합니다.")
 
     months = list_available_months(csv_path, emotion_columns)
 
