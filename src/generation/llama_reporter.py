@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 from typing import Any
 
@@ -105,19 +106,26 @@ class LlamaReportGenerator:
         """모델 파일이 로컬 Hugging Face 캐시에 어느 정도 준비됐는지 확인합니다."""
         cache_root = Path.home() / ".cache" / "huggingface" / "hub"
         model_cache_dir = cache_root / f"models--{self.model_id.replace('/', '--')}"
-        expected_weight_files = [f"model-{index:05d}-of-00004.safetensors" for index in range(1, 5)]
-        expected_support_files = [
-            "config.json",
-            "generation_config.json",
-            "model.safetensors.index.json",
-            "special_tokens_map.json",
-            "tokenizer.json",
-            "tokenizer_config.json",
-        ]
-
         existing_files = []
         if model_cache_dir.exists():
             existing_files = [path.name for path in model_cache_dir.rglob("*") if path.is_file()]
+
+        expected_weight_files = []
+        index_files = list(model_cache_dir.rglob("model.safetensors.index.json")) if model_cache_dir.exists() else []
+        if index_files:
+            with index_files[0].open("r", encoding="utf-8") as file:
+                weight_index = json.load(file)
+            expected_weight_files = sorted(
+                {Path(file_name).name for file_name in weight_index.get("weight_map", {}).values()}
+            )
+        else:
+            expected_weight_files = sorted({file_name for file_name in existing_files if file_name.endswith(".safetensors")})
+
+        expected_support_files = ["config.json"]
+        tokenizer_candidates = ["tokenizer.json", "tokenizer.model", "tokenizer.model.v3", "tekken.json", "vocab.json"]
+        expected_support_files.extend(
+            [file_name for file_name in tokenizer_candidates if file_name in existing_files]
+        )
 
         expected_files = expected_weight_files + expected_support_files
 
