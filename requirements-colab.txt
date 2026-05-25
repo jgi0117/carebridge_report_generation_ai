@@ -1,4 +1,3 @@
-# 공통 패키지
 fastapi==0.136.1
 gradio==6.1.0
 pandas==2.2.2
@@ -7,20 +6,5 @@ PyYAML==6.0.3
 accelerate==1.1.1
 huggingface-hub==0.36.2
 uvicorn==0.46.0
-
-# 기본 선택: Llama 3B / Llama 8B / Mistral Small 24B 2501
-# 사용 모델 예시:
-# - meta-llama/Llama-3.2-3B-Instruct
-# - meta-llama/Llama-3.1-8B-Instruct
-# 위 모델들은 기존 코드 구조에서 안정적으로 쓰기 위해 아래 transformers 버전을 사용합니다.
-# transformers==4.46.3
-
-# 실험 선택: Mistral Small 3.2 24B 2501 + 4bit 양자화
-# 사용 모델 예시:
-# - mistralai/Mistral-Small-3.2-24B-Instruct-2501
-# 이 모델은 model type mistral3라서 transformers==4.46.3에서 인식되지 않을 수 있습니다.
-# 이 모델을 테스트할 때는 위 transformers==4.46.3 줄을 주석 처리하고,
-# 아래 git 버전 transformers 줄의 주석을 해제하세요.
-# 또한 4bit 양자화를 위해 bitsandbytes 줄의 주석을 해제해주세요.
-transformers @ git+https://github.com/huggingface/transformers.git
+transformers==4.46.3
 bitsandbytes>=0.45.4
