@@ -202,13 +202,21 @@ class LlamaReportGenerator:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ]
-        inputs = self._tokenizer.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
-        ).to(self._model.device)
+        if getattr(self._tokenizer, "chat_template", None):
+            inputs = self._tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt",
+            ).to(self._model.device)
+        else:
+            prompt = (
+                f"System:\n{SYSTEM_PROMPT}\n\n"
+                f"User:\n{user_prompt}\n\n"
+                "Assistant:\n"
+            )
+            inputs = self._tokenizer(prompt, return_tensors="pt").to(self._model.device)
 
         outputs = self._model.generate(
             **inputs,

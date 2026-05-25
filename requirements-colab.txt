@@ -13,7 +13,7 @@ uvicorn==0.46.0
 # - meta-llama/Llama-3.2-3B-Instruct
 # - meta-llama/Llama-3.1-8B-Instruct
 # 위 모델들은 기존 코드 구조에서 안정적으로 쓰기 위해 아래 transformers 버전을 사용합니다.
-# transformers==4.46.3
+transformers==4.46.3
 
 # 실험 선택: Mistral Small 3.2 24B 2506
 # 사용 모델 예시:
@@ -21,4 +21,4 @@ uvicorn==0.46.0
 # 이 모델은 model type mistral3라서 transformers==4.46.3에서 인식되지 않을 수 있습니다.
 # 이 모델을 테스트할 때는 위 transformers==4.46.3 줄을 주석 처리하고,
 # 아래 git 버전 transformers 줄의 주석을 해제하세요.
-transformers @ git+https://github.com/huggingface/transformers.git
+# transformers @ git+https://github.com/huggingface/transformers.git
