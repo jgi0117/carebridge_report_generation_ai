@@ -86,6 +86,7 @@ import os
 
 os.environ["HF_TOKEN"] = "your_huggingface_token"
 os.environ["REPORT_LLM_CONFIG"] = "configs/llm_colab.yaml"
+os.environ["GRADIO_SHARE"] = "true"
 ```
 
 GPU가 잡혔는지 먼저 확인합니다.
@@ -106,6 +107,12 @@ python -m src.generation.download_model --local-files-only
 
 `configs/llm_colab.yaml`은 `local_files_only: false`, `torch_dtype: float16`으로 설정되어 있어 Colab GPU에서 모델을 다운로드하고 GPU 메모리에 올리는 흐름에 맞춰져 있습니다.
 
+Colab에서 Gradio 화면을 보려면 public link가 필요합니다. 위처럼 `GRADIO_SHARE=true`를 설정한 뒤 실행하면 `https://...gradio.live` 형태의 주소가 출력됩니다.
+
+```bash
+python -m src.api.app_gradio
+```
+
 ## Gradio 실행
 
 ```powershell
@@ -116,7 +123,9 @@ python -m src.api.app_gradio
 
 로컬 기본 설정은 `configs/llm.yaml`의 `local_files_only: true`로 되어 있습니다. 모델 다운로드가 완료된 뒤에는 Hugging Face 서버 확인 없이 로컬 캐시만 사용하므로, 네트워크가 막힌 환경에서도 실행할 수 있습니다. Colab처럼 처음 모델을 받는 환경에서는 `REPORT_LLM_CONFIG=configs/llm_colab.yaml`을 지정하세요.
 
-CPU 환경에서는 Llama 3.1 8B 추론이 매우 느릴 수 있습니다. 빠른 MVP 확인이 목적이라면 `max_new_tokens`를 더 낮추거나 3B급 모델로 바꿔 먼저 기능 흐름을 검증하는 것이 좋습니다.
+로컬 PC에서 실행할 때는 `http://127.0.0.1:7860`으로 접속하면 됩니다. Colab에서 실행할 때는 이 주소가 Colab 내부 주소라 직접 접속할 수 없고, `GRADIO_SHARE=true`로 생성된 public link를 사용해야 합니다.
+
+현재 기본 `max_new_tokens`는 512입니다. CPU 환경에서는 Llama 3.1 8B 추론이 매우 느릴 수 있으므로, 빠른 MVP 확인이 목적이라면 이 값을 낮추거나 3B급 모델로 바꿔 먼저 기능 흐름을 검증하는 것이 좋습니다.
 
 ## FastAPI 실행
 

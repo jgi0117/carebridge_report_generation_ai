@@ -4,8 +4,9 @@ llm:
   model_id: meta-llama/Llama-3.1-8B-Instruct
   hf_token_env: HF_TOKEN
   temperature: 0.2
-  max_new_tokens: 220
+  max_new_tokens: 512
   torch_dtype: auto
   device_map: auto
+  low_cpu_mem_usage: true
   trust_remote_code: false
   local_files_only: true

@@ -19,7 +19,8 @@ class LlamaReportGenerator:
         self.temperature = float(llm_config.get("temperature", 0.2))
         self.max_new_tokens = int(llm_config.get("max_new_tokens", 700))
         self.device_map = llm_config.get("device_map", "auto")
-        self.torch_dtype = self._resolve_dtype(llm_config.get("torch_dtype", "auto"))
+        self.torch_dtype = self._resolve_runtime_dtype(llm_config)
+        self.low_cpu_mem_usage = bool(llm_config.get("low_cpu_mem_usage", True))
         self.trust_remote_code = bool(llm_config.get("trust_remote_code", False))
         self.local_files_only = bool(llm_config.get("local_files_only", True))
         self.hf_token_env = llm_config.get("hf_token_env", "HF_TOKEN")
@@ -32,6 +33,25 @@ class LlamaReportGenerator:
         if dtype_name == "auto":
             return "auto"
         return getattr(torch, dtype_name)
+
+    def _resolve_runtime_dtype(self, llm_config: dict[str, Any]):
+        """GPU/CPU 환경에 맞는 dtype을 선택합니다."""
+        if torch.cuda.is_available():
+            return self._resolve_dtype(llm_config.get("torch_dtype", "auto"))
+        return self._resolve_dtype(llm_config.get("cpu_torch_dtype", llm_config.get("torch_dtype", "auto")))
+
+    def _build_model_load_kwargs(self) -> dict[str, Any]:
+        """CPU 환경에서 accelerate disk offload가 걸리지 않도록 로딩 옵션을 구성합니다."""
+        kwargs = {
+            "token": self.hf_token,
+            "local_files_only": self.local_files_only,
+            "torch_dtype": self.torch_dtype,
+            "low_cpu_mem_usage": self.low_cpu_mem_usage,
+            "trust_remote_code": self.trust_remote_code,
+        }
+        if torch.cuda.is_available() and self.device_map:
+            kwargs["device_map"] = self.device_map
+        return kwargs
 
     def _build_hf_access_error(self) -> RuntimeError:
         """gated 모델 접근 권한 문제를 백엔드/화면에서 바로 이해할 수 있게 바꿉니다."""
@@ -87,6 +107,9 @@ class LlamaReportGenerator:
             "cuda_device_count": torch.cuda.device_count(),
             "loaded": self._model is not None,
             "max_new_tokens": self.max_new_tokens,
+            "torch_dtype": str(self.torch_dtype),
+            "low_cpu_mem_usage": self.low_cpu_mem_usage,
+            "device_map": getattr(self._model, "hf_device_map", None) if self._model is not None else None,
         }
 
     def _load_model(self) -> None:
@@ -103,11 +126,7 @@ class LlamaReportGenerator:
             )
             self._model = AutoModelForCausalLM.from_pretrained(
                 self.model_id,
-                token=self.hf_token,
-                local_files_only=self.local_files_only,
-                device_map=self.device_map,
-                torch_dtype=self.torch_dtype,
-                trust_remote_code=self.trust_remote_code,
+                **self._build_model_load_kwargs(),
             )
         except (HfHubHTTPError, LocalEntryNotFoundError, OSError) as error:
             message = str(error)
@@ -115,6 +134,12 @@ class LlamaReportGenerator:
                 raise self._build_hf_access_error() from error
             if "Cannot find" in message or "couldn't connect" in message or "local files" in message:
                 raise self._build_cache_error() from error
+            if "paging file is too small" in message or "페이징 파일이 너무 작습니다" in message or "os error 1455" in message:
+                raise RuntimeError(
+                    "모델 로드 중 Windows 페이지 파일/메모리가 부족합니다. "
+                    "로컬 CPU에서는 Llama 3.1 8B가 매우 무거우므로 configs/llm.yaml의 torch_dtype을 auto로 유지하고, "
+                    "가능하면 GPU 환경이나 더 작은 모델을 사용하세요."
+                ) from error
             raise
 
     def generate(self, user_prompt: str) -> str:

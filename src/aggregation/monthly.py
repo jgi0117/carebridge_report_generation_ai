@@ -35,3 +35,22 @@ def build_trend_context(monthly_summary: pd.DataFrame, month: str) -> list[dict]
     start_index = max(0, month_index - 2)
     end_index = min(len(months), month_index + 1)
     return monthly_summary.iloc[start_index:end_index].to_dict(orient="records")
+
+
+def format_probability_for_report(value: float) -> str:
+    """0~1 확률값을 리포트용 '약 x%' 문자열로 변환합니다."""
+    return f"약 {round(float(value) * 100)}%"
+
+
+def format_summary_for_report(summary: dict, probability_keys: list[str]) -> dict:
+    """LLM 프롬프트에는 소수 대신 반올림한 퍼센트 문자열을 전달합니다."""
+    formatted = summary.copy()
+    for key in probability_keys:
+        if key in formatted:
+            formatted[key] = format_probability_for_report(formatted[key])
+    return formatted
+
+
+def format_trend_context_for_report(trend_context: list[dict], probability_keys: list[str]) -> list[dict]:
+    """최근 월별 흐름도 리포트용 퍼센트 문자열로 변환합니다."""
+    return [format_summary_for_report(summary, probability_keys) for summary in trend_context]

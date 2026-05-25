@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import gradio as gr
 
 from src.aggregation.monthly import build_monthly_summary
@@ -28,7 +30,12 @@ def generate_monthly_report(month: str):
             generator=generator,
             emotion_columns=emotion_columns,
         )
-        return load_sample_table(), result["report"], result["month_summary"]
+        timed_report = f"{result['report']}\n\n---\n생성 시간: {result['generation_seconds']}초"
+        summary_with_time = {
+            **result["month_summary"],
+            "generation_seconds": result["generation_seconds"],
+        }
+        return load_sample_table(), timed_report, summary_with_time
     except (RuntimeError, ValueError) as error:
         return load_sample_table(), f"### 리포트 생성 실패\n\n{error}", {"error": str(error)}
 
@@ -63,4 +70,6 @@ with gr.Blocks(title="CareBridge 월간 감정 리포트") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(
+        share=os.getenv("GRADIO_SHARE", "false").lower() == "true",
+    )

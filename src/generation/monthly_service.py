@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+from time import perf_counter
 from pathlib import Path
 
-from src.aggregation.monthly import build_monthly_summary, build_trend_context, get_month_summary
+from src.aggregation.monthly import (
+    build_monthly_summary,
+    build_trend_context,
+    format_summary_for_report,
+    format_trend_context_for_report,
+    get_month_summary,
+)
 from src.generation.llama_reporter import LlamaReportGenerator
 from src.ingestion.emotion_loader import load_emotion_probabilities, validate_emotion_columns
 from src.prompts.monthly_report import build_monthly_report_prompt
@@ -30,14 +37,21 @@ def build_monthly_report(
     monthly_summary = build_monthly_summary(dataframe, emotion_columns)
     month_summary = get_month_summary(monthly_summary, month)
     trend_context = build_trend_context(monthly_summary, month)
-    prompt = build_monthly_report_prompt(month_summary, trend_context)
+    probability_keys = emotion_columns + ["dominant_probability", "negative_signal", "positive_signal"]
+    prompt_month_summary = format_summary_for_report(month_summary, probability_keys)
+    prompt_trend_context = format_trend_context_for_report(trend_context, probability_keys)
+    prompt = build_monthly_report_prompt(prompt_month_summary, prompt_trend_context)
+
+    generation_started_at = perf_counter()
     report = generator.generate(prompt)
+    generation_seconds = round(perf_counter() - generation_started_at, 2)
 
     return {
         "month": month,
         "month_summary": month_summary,
         "trend_context": trend_context,
         "report": report,
+        "generation_seconds": generation_seconds,
     }
 
 
