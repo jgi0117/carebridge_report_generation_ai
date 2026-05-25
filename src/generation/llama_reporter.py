@@ -85,6 +85,19 @@ class LlamaReportGenerator:
             kwargs["device_map"] = self.device_map
         return kwargs
 
+    def _get_model_loader(self):
+        if "mistral-small-3.2" not in self.model_id.lower():
+            return AutoModelForCausalLM
+
+        try:
+            from transformers import AutoModelForImageTextToText
+        except ImportError as error:
+            raise RuntimeError(
+                "Mistral Small 3.2 모델은 AutoModelForImageTextToText 로더가 필요합니다. "
+                "requirements-colab.txt에서 transformers git 버전 줄을 활성화한 뒤 다시 설치해 주세요."
+            ) from error
+        return AutoModelForImageTextToText
+
     def _build_hf_access_error(self) -> RuntimeError:
         """gated 모델 접근 권한 문제를 백엔드/화면에서 바로 이해할 수 있게 바꿉니다."""
         return RuntimeError(
@@ -164,7 +177,7 @@ class LlamaReportGenerator:
                 local_files_only=self.local_files_only,
                 trust_remote_code=self.trust_remote_code,
             )
-            self._model = AutoModelForCausalLM.from_pretrained(
+            self._model = self._get_model_loader().from_pretrained(
                 self.model_id,
                 **self._build_model_load_kwargs(),
             )
